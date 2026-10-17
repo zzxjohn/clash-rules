@@ -27,22 +27,48 @@ rules:
 
 The provider interval refreshes this hosted file only. Publishing these files does not activate the provider in any client configuration.
 
-## Automatic synchronization
+## Automatic synchronization for all registered sets
 
-Once `.github/workflows/sync-github.yml` is committed to `main`, the **Sync GitHub ruleset** workflow checks upstream daily at 02:17 UTC (10:17 UTC+8). It also runs when the workflow, converter or tests are updated, and can be started under **Actions → Sync GitHub ruleset → Run workflow**. GitHub may delay scheduled jobs. Public-repository schedules can be disabled after 60 days without repository activity; review the Actions page if updates stop.
+`rulesets.json` is the registry. The **Sync rulesets** workflow processes every entry; its `.github/workflows/sync-github.yml` filename is retained for compatibility. It checks daily at 02:17 UTC (10:17 UTC+8), supports **Actions → Sync rulesets → Run workflow**, and runs when the registry, workflow, scripts or tests change on main. GitHub may delay scheduled jobs, and public-repository schedules can be disabled after 60 days of inactivity.
 
-The workflow uses GitHub's built-in `GITHUB_TOKEN` with job-level `contents: write`. No personal access token or custom secret is required. Repository/organization Actions policy and branch protection must permit this job to commit to `main`; a rejected push fails normally and never force-pushes.
+The workflow uses the built-in `GITHUB_TOKEN` with job-level `contents: write`. No personal token or custom secret is required. Actions policy and branch protection must allow the job's normal commit to main. A rejected push fails without force-pushing.
 
-Each run tests conversion safeguards, downloads the public upstream JSON, validates its complete schema, and generates `rules/GitHub.yaml`. It retains the corresponding normalized source in `sources/GitHub.json` and records source/output hashes in `sources/GitHub.provenance.json`. It commits only when these files change. Unknown fields, duplicate keys, unsupported schema versions, empty rules and malformed values cause failure instead of silently dropping rules. A failed download or validation preserves the last published ruleset.
+### Add a future ruleset
 
-To check locally with Python 3 (standard library only):
+Add an entry to the `rulesets` array in `rulesets.json`, keeping the existing entries. For example, after choosing a real source URL:
+
+```json
+{
+  "name": "Example",
+  "url": "https://raw.githubusercontent.com/OWNER/REPOSITORY/main/rule/Example/Example.json",
+  "license": "GPL-3.0"
+}
+```
+
+Names use letters, digits, underscores and hyphens, are unique ignoring case, and start with a letter or digit. URLs must use HTTPS without embedded credentials. Record the source's actual license and preserve any additional required license/attribution files when adding a source. No converter or workflow edit is needed for another supported domain ruleset.
+
+Commit the registry update to main. The workflow downloads, validates and generates for each entry:
+
+- `rules/NAME.yaml`: Clash/Mihomo classical YAML provider.
+- `sources/NAME.json`: normalized upstream source snapshot.
+- `sources/NAME.provenance.json`: source URL, license, rule count, source and output hashes.
+
+A new provider URL will be `https://raw.githubusercontent.com/zzxjohn/clash-rules/main/rules/NAME.yaml`. Add that provider and its routing rule to the desired Clash profile separately; the registry does not choose routes or change gateway profiles.
+
+### Conversion and failure behavior
+
+Supported source schema: sing-box JSON version 2 with `domain`, `domain_suffix` (without a leading dot), and `domain_keyword`. Single-string shorthand and arrays are supported. All entries and their ordering are preserved. IP, regex, process, logical/inverted, and other rule types require a separate reviewed conversion; they are rejected rather than partially copied. A future ruleset name is unrestricted by the converter, but its rule types must be supported.
+
+The complete registered batch is downloaded and validated before generated outputs are replaced. A failed source download or validation prevents the whole batch from updating and committing; the last published files remain intact. Only changed generated/source files are committed, so unchanged upstream data produces no commit. Removing a registry entry stops its synchronization; existing published files are retained until intentionally removed.
+
+Local checks (Python 3 standard library only):
 
 ```sh
 python3 -m unittest discover -s tests -v
-python3 scripts/sync_github.py
+python3 scripts/sync_rulesets.py
 ```
 
-For offline conversion, use `python3 scripts/sync_github.py --source-file sources/GitHub.json`. All rule values and their ordering are preserved; generated comments and formatting differ from the original JSON.
+For offline validation, `python3 scripts/sync_rulesets.py --source-dir sources` expects `NAME.json` for every registered set. Override the registry using `--registry path/to/registry.json`. The old `scripts/sync_github.py` remains a compatibility entry point and delegates to the same registry-driven implementation.
 
 ## Source and license
 

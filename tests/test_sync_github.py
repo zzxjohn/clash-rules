@@ -12,13 +12,10 @@ spec.loader.exec_module(sync)
 
 
 class ConversionSafetyTests(unittest.TestCase):
-    def test_source_snapshot_preserves_all_entries_in_order(self):
-        data = sync.parse_source((SCRIPT.parents[1] / "sources/GitHub.json").read_bytes())
+    def test_domain_rules_preserve_values_and_order(self):
+        data = {"version": 2, "rules": [{"domain": ["api.example.com"], "domain_suffix": ["example.org"], "domain_keyword": ["example"]}]}
         text, count = sync.convert(data)
-        expected = []
-        for rule in data["rules"]:
-            for field, values in rule.items():
-                expected.extend(f"{sync.FIELDS[field]},{value}" for value in values)
+        expected = ["DOMAIN,api.example.com", "DOMAIN-SUFFIX,example.org", "DOMAIN-KEYWORD,example"]
         import json
         actual = [json.loads(line[4:]) for line in text.splitlines() if line.startswith("  - ")]
         self.assertEqual(actual, expected)

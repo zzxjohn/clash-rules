@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "rulesets": [
+    {
+      "name": "GitHub",
+      "url": "https://raw.githubusercontent.com/senshinya/singbox_ruleset/main/rule/GitHub/GitHub.json",
+      "license": "GPL-3.0"
+    }
+  ]
+}
