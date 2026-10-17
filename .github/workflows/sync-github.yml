@@ -1,0 +1,49 @@
+name: Sync rulesets
+
+'on':
+  schedule:
+    - cron: '17 2 * * *' # Daily at 10:17 UTC+8; GitHub may delay scheduled jobs.
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/sync-github.yml'
+      - 'rulesets.json'
+      - 'scripts/**'
+      - 'tests/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rulesets-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - name: Check out main
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: main
+      - name: Test conversion safeguards
+        run: python3 -m unittest discover -s tests -v
+      - name: Download and convert upstream rules
+        run: python3 scripts/sync_rulesets.py
+      - name: Commit changed source and rules
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add -- rules/ sources/
+          if git diff --cached --quiet; then
+            echo 'Upstream rules unchanged.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Sync registered rulesets from upstream'
+          git push origin HEAD:main
