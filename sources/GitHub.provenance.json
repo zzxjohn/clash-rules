@@ -2,8 +2,8 @@
   "name": "GitHub",
   "source_url": "https://raw.githubusercontent.com/senshinya/singbox_ruleset/main/rule/GitHub/GitHub.json",
   "source_version": 2,
-  "normalized_source_sha256": "c22922518042ab1b4a75b8a8615f0a3b531a829d651e4a8e9b988e92f618f93c",
-  "output_sha256": "476de012c4fc4f626369ffcaf24eb6bc7b29f5611a2749bc9741d2ae5c51bf38",
+  "normalized_source_sha256": "18e1083d28f5a4081b1292110aeac77299102a0021babf283ab89f87ae95a3e4",
+  "output_sha256": "0f5c359239229dae2c13df93c5e397b819d1f5c2ed24169f847d4685f44429bb",
   "rule_count": 31,
   "upstream_license": "GPL-3.0"
 }
